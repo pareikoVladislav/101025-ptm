@@ -1,9 +1,65 @@
-from decimal import Decimal
 from typing import Any
 
 from rest_framework import serializers
 
 from library.models import Book, Library
+
+
+class BookQueryParamsSerializer(serializers.Serializer):
+    author = serializers.CharField(required=False)
+    price_gt = serializers.DecimalField(
+        required=False,
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+    )
+    price_lt = serializers.DecimalField(
+        required=False,
+        max_digits=10,
+        decimal_places=2,
+        min_value=0,
+    )
+    sort_by = serializers.ChoiceField(
+        required=False,
+        choices=("title", "author", "price", "published_date"),
+    )
+    sort_order = serializers.ChoiceField(
+        required=False,
+        choices=("asc", "desc"),
+    )
+
+    def validate_author(self, value: str) -> str:
+        value = value.strip()
+
+        if not value.replace("-", "").replace(" ", "").isalpha():
+            raise serializers.ValidationError(
+                "Author's last name must contain only alphabetic symbols, spaces or hyphens."
+            )
+
+        return value
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        price_gt = attrs.get("price_gt")
+        price_lt = attrs.get("price_lt")
+        sort_by = attrs.get("sort_by")
+        sort_order = attrs.get("sort_order")
+
+        if price_gt is not None and price_lt is not None and price_gt >= price_lt:
+            raise serializers.ValidationError(
+                {
+                    "price_gt": "price_gt must be less than price_lt.",
+                    "price_lt": "price_lt must be greater than price_gt.",
+                }
+            )
+
+        if sort_order and not sort_by:
+            raise serializers.ValidationError(
+                {
+                    "sort_order": "sort_order can be used only together with sort_by."
+                }
+            )
+
+        return attrs
 
 
 class LibraryShortInfoSerializer(serializers.ModelSerializer):
@@ -85,57 +141,4 @@ class BookCreateUpdateSerializer(serializers.ModelSerializer):
         # extra_kwargs = {
         #     'price' : {
         #         'read_only': True
-        #     }
-        # }
-
-    def validate_name(self, value: str) -> str:
-        black_list_chars = "*&^%*(&^%*(@#&^)*(@&^#%"
-        # for char in value.strip():
-        #     if char in black_list_chars:
-        #         raise serializers.ValidationError(
-        #             "Книга не может иметь в названии спец символы"
-        #         )
-
-        if len(value) < 5:
-            raise serializers.ValidationError(
-                "Название книги слишком короткое. Должно быть от 5 до 100 символов"
-            )
-
-        # if not value.isalpha():
-        #     raise serializers.ValidationError(
-        #         "Книга не может иметь в названии спец символы"
-        #     )
-
-        if any(char in black_list_chars for char in value.strip()):
-            raise serializers.ValidationError(
-                "Книга не может иметь в названии спец символы"
-            )
-
-        return value
-
-    def create(self, validated_data: dict[str, Any]):
-        discount_percentage = validated_data.pop('discount_percentage', None)
-        price = validated_data.get('price')
-
-        if discount_percentage:
-            disc_price = price - (price * discount_percentage / 100)
-            validated_data['discounted_price'] = Decimal(str(disc_price))
-
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        return super().update(instance, validated_data)
-
-
-# class TestClass(serializers.Serializer):
-#     price_gt = ...
-#     price_lt = ...
-#     day = ...
-#     book_name = ...
-#     library_name = ...
-#
-#
-#     if ...:
-#         ...
-#     else:
-#         ...
+        #    
