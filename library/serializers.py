@@ -2,7 +2,7 @@ from typing import Any
 
 from rest_framework import serializers
 
-from library.models import Book, Library, Category, Author, User, Review
+from library.models import Book, Library, Category, Author, User, Review, Publisher
 
 
 class BookQueryParamsSerializer(serializers.Serializer):
@@ -210,3 +210,41 @@ class UserListSerializer(serializers.ModelSerializer):
             ]
 
         return data
+
+
+class PublisherListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Publisher
+        fields = [
+            'id',
+            'name'
+        ]
+
+
+class PublisherDetailSerializer(serializers.ModelSerializer):
+    count_of_books = serializers.IntegerField(
+        required=False
+    )
+
+    class Meta:
+        model = Publisher
+        fields = '__all__'
+
+
+class PublisherCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Publisher
+        fields = [
+            'name',
+            'address',
+            'country',
+        ]
+
+
+class PublisherUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Publisher
+        fields = '__all__'

@@ -1,4 +1,5 @@
 from django.urls import path
+from rest_framework.routers import SimpleRouter, DefaultRouter
 
 
 from library.views import book_list_create
@@ -9,8 +10,18 @@ from library.class_views import (
     CategoryRetrieveUpdateDestroyGenericView,
     AuthorListCreateGenericView,
     UserListGenericView,
-    BookListGenericView
+    BookListGenericView,
+    PublisherViewSet
 )
+
+
+router = SimpleRouter()
+# router = DefaultRouter()
+router.register('publishers', PublisherViewSet)
+#
+# publishers/
+# publishers/<regular expression>/
+
 
 # api/v1/books/
 urlpatterns = [
@@ -23,3 +34,13 @@ urlpatterns = [
     path('authors/', AuthorListCreateGenericView.as_view()),
     path('users/', UserListGenericView.as_view()),
 ]
+
+
+# print(router.urls)
+urlpatterns += router.urls
+
+
+
+
+# PK = 1234
+# PK (uuid) = 'asd8f6-865sms-sknjf6-alan27'

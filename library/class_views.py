@@ -1,11 +1,21 @@
 from typing import Any
 
+from django.db.models import Model, Count
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.decorators import action
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.generics import get_object_or_404, ListCreateAPIView, ListAPIView
+
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import (
+    get_object_or_404,
+    GenericAPIView,
+    RetrieveUpdateDestroyAPIView,
+    ListCreateAPIView,
+    ListAPIView
+)
+from rest_framework.viewsets import ModelViewSet
+
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework import status
@@ -19,9 +29,10 @@ from library.serializers import (
     # AuthorSerializer,
     AuthorListSerializer,
     AuthorCreateSerializer,
-    UserListSerializer
+    UserListSerializer, PublisherListSerializer, PublisherCreateSerializer,
+    PublisherUpdateSerializer, PublisherDetailSerializer
 )
-from library.models import Book, Category, Author, User
+from library.models import Book, Category, Author, User, Publisher
 
 
 class BookListCreateAPIView(APIView):
@@ -286,3 +297,67 @@ class BookListGenericView(ListAPIView):
         'price',
         'published_date',
     ]
+
+
+
+
+# ================================================================================================
+
+# VEW SETS
+
+# ================================================================================================
+
+
+
+class PublisherViewSet(ModelViewSet):
+    queryset = Publisher.objects.all()
+
+    # HTTP методы заменяются на self.actions
+    #
+    # GET -> list | retrieve | get_statistic_by_publisher
+    # PUT -> update
+    # PATCH -> partial_update
+    # POST -> create
+    # DELETE -> destroy
+
+    # проверка на метод заменяется на проверку на action
+    # if request.method  => => if self.action
+
+    def get_serializer_class(self):
+        # print(self.action)
+
+        if self.action == 'list':
+            return PublisherListSerializer
+        elif self.action == 'create':
+            return PublisherCreateSerializer
+        elif self.action in {'update', 'partial_update'}:
+            return PublisherUpdateSerializer
+
+        return PublisherDetailSerializer
+
+
+    # detail:
+    # True -- работаем с одним конкретным объектом
+    # False -- работаем со МНОГИМИ ОБЪЕКТАМИ
+    @action(detail=True, methods=['get',])
+    def get_statistic_by_publisher(self, request: Request, *args, **kwargs) -> Response:
+        publisher = self.get_object()
+        serializer = self.get_serializer(publisher)
+        data = serializer.data
+        data['count_of_books'] = publisher.books.count()
+
+        return Response(
+            data=data,
+            status=status.HTTP_200_OK
+        )
+
+    @action(detail=False, methods=['get',])
+    def get_statistic_by_publishers(self, request: Request, *args, **kwargs) -> Response:
+        publishers = self.get_queryset()
+
+        publishers = publishers.values('name').annotate(count_of_books=Count('books'))
+
+        return Response(
+            data=publishers,
+            status=status.HTTP_200_OK
+        )
