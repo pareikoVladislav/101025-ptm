@@ -1,8 +1,13 @@
 from typing import Any
-
 from rest_framework import serializers
-
 from library.models import Book, Library, Category, Author, User, Review, Publisher
+
+# Сериализатор для Категорий (Задание 1 и 2)
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'is_deleted', 'deleted_at']
+        read_only_fields = ['is_deleted', 'deleted_at']
 
 
 class BookQueryParamsSerializer(serializers.Serializer):
@@ -41,150 +46,10 @@ class BookQueryParamsSerializer(serializers.Serializer):
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         price_gt = attrs.get("price_gt")
         price_lt = attrs.get("price_lt")
-        sort_by = attrs.get("sort_by")
-        sort_order = attrs.get("sort_order")
-
-        if price_gt is not None and price_lt is not None and price_gt >= price_lt:
-            raise serializers.ValidationError(
-                {
-                    "price_gt": "price_gt must be less than price_lt.",
-                    "price_lt": "price_lt must be greater than price_gt.",
-                }
-            )
-
-        if sort_order and not sort_by:
-            raise serializers.ValidationError(
-                {
-                    "sort_order": "sort_order can be used only together with sort_by."
-                }
-            )
-
         return attrs
 
 
-class LibraryShortInfoSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Library
-        fields = [
-            'id',
-            'name'
-        ]
-
-
-class BookDetailSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField()
-    libraries = LibraryShortInfoSerializer(
-        many=True,
-        read_only=True
-    )
-    publisher = serializers.StringRelatedField()
-    category = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True
-    )
-
-
-    class Meta:
-        model = Book
-        exclude = [
-            'owner',
-            'published_date',
-        ]
-
-
-# Сериализатор называем, как <ModelName>+<action>+Serializer
-class BookListSerializer(serializers.ModelSerializer):
-    """
-    Модел сериалайзер умеет привязываться к конкретной указаной модели.
-    Когда мы указываем ему мета класс, там мы говорим:
-    1. На какую модель должен привязаться сериалайзер
-    2. В этой модели, на какие поля он должен смотреть (fields), или
-    какие поля он должен исключить (exclude)
-    """
-    class Meta:
-        model = Book
-        fields = [
-            'id',
-            'name',
-            'author',
-            'price',
-            'category',
-        ]
-
-
-class BookCreateUpdateSerializer(serializers.ModelSerializer):
-    price = serializers.DecimalField(
-        max_digits=6,
-        decimal_places=2,
-        # read_only=True
-    )
-
-    discount_percentage = serializers.IntegerField(
-        min_value=0,
-        max_value=100,
-        write_only=True,
-        required=False
-    )
-
-    class Meta:
-        model = Book
-        fields = [
-            'name',
-            'author',
-            'libraries',
-            'price',
-            'discount_percentage',  # NEW кастомная колонка. !! ИСКЛЮЧИТЕЛЬНО ВРЕМЕННАЯ НЕ ЗАБЫТЬ УДАЛИТЬ ПЕРЕД create \ update !!
-            'category',
-        ]
-        #
-        # extra_kwargs = {
-        #     'price' : {
-        #         'read_only': True
-        #
-
-
-class CategorySerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Category
-        fields = '__all__'
-
-
-# class AuthorSerializer(serializers.ModelSerializer):
-class AuthorListSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Author
-        fields = [
-            'id',
-            'surname',
-            'rating'
-        ]
-
-        # extra_kwargs = {
-        #     'date_for_birth': {
-        #         'required': False,
-        #         'read_only': True
-        #     }
-        # }
-
-
-class AuthorCreateSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Author
-        fields = [
-            'name',
-            'surname',
-            'date_for_birth',
-            'rating',
-        ]
-
-
-
 class UserListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = [
@@ -196,9 +61,6 @@ class UserListSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-
-        # print(self.context)
-
         if self.context.get('include_related'):
             data['reviews'] = [
                 {
@@ -208,12 +70,10 @@ class UserListSerializer(serializers.ModelSerializer):
                 }
                 for review in instance.reviews.all()
             ]
-
         return data
 
 
 class PublisherListSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Publisher
         fields = [
@@ -233,7 +93,6 @@ class PublisherDetailSerializer(serializers.ModelSerializer):
 
 
 class PublisherCreateSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Publisher
         fields = [
@@ -241,10 +100,3 @@ class PublisherCreateSerializer(serializers.ModelSerializer):
             'address',
             'country',
         ]
-
-
-class PublisherUpdateSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Publisher
-        fields = '__all__'
