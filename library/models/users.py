@@ -59,6 +59,24 @@ class User(AbstractBaseUser, PermissionsMixin):
         default=timezone.now
     )
 
+    # Исправление конфликта: явно переопределяем скрытые поля со своими related_name
+    groups = models.ManyToManyField(
+        'auth.Group',
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to.',
+        related_name='library_user_groups',
+        related_query_name='user'
+    )
+    user_permissions = models.ManyToManyField(
+        'auth.Permission',
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name='library_user_permissions',
+        related_query_name='user'
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = "username"
@@ -69,13 +87,5 @@ class Membership(models.Model):
     member = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="membership_records"
-    )
-    library = models.ForeignKey(
-        to='Library',
-        on_delete=models.CASCADE,
-        related_name="membership_records"
-    )
-    joined_at = models.DateField(
-        default=timezone.now
+        related_name='memberships'
     )
