@@ -156,19 +156,13 @@ AUTH_PASSWORD_VALIDATORS = [
 ]  # qwe
 
 
+# НАСТРОЙКИ REST FRAMEWORK (JWT + Глобальная пагинация на 5 элементов)
 REST_FRAMEWORK = {
-    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'DEFAULT_PAGINATION_CLASS': 'paginators.CustomCursorPaginator',
-    # 'PAGE_SIZE': 5
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        # 'rest_framework.authentication.BasicAuthentication',
-        # 'rest_framework.authentication.SessionAuthentication',
-        # 'rest_framework.authentication.TokenAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated'
-    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5,  # По заданию №18 должно возвращаться 5 элементов по умолчанию
 }
 
 from datetime import timedelta
