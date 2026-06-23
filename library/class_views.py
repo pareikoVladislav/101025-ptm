@@ -336,22 +336,7 @@ class BookListGenericView(ListAPIView):
 
 
 
-# ================================================================================================
 
-# VEW SETS
-
-# ================================================================================================
-
-
-
-class PublisherViewSet(ModelViewSet):
-    queryset = Publisher.objects.all()
-
-    # HTTP методы заменяются на self.actions
-    #
-    # GET -> list | retrieve | get_statistic_by_publisher
-    # PUT -> update
-    # PATCH -> partial_update
     # POST -> create
     # DELETE -> destroy
 
