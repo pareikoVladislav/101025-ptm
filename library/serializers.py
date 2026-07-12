@@ -1,6 +1,6 @@
 from typing import Any
-
 from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password  # Для валидации сложности пароля
 
 from library.models import Book, Library, Category, Author, User, Review, Publisher
 
@@ -84,7 +84,6 @@ class BookDetailSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-
     class Meta:
         model = Book
         exclude = [
@@ -93,15 +92,7 @@ class BookDetailSerializer(serializers.ModelSerializer):
         ]
 
 
-# Сериализатор называем, как <ModelName>+<action>+Serializer
 class BookListSerializer(serializers.ModelSerializer):
-    """
-    Модел сериалайзер умеет привязываться к конкретной указаной модели.
-    Когда мы указываем ему мета класс, там мы говорим:
-    1. На какую модель должен привязаться сериалайзер
-    2. В этой модели, на какие поля он должен смотреть (fields), или
-    какие поля он должен исключить (exclude)
-    """
     class Meta:
         model = Book
         fields = [
@@ -133,7 +124,7 @@ class BookCreateUpdateSerializer(serializers.ModelSerializer):
             'author',
             'libraries',
             'price',
-            'discount_percentage',  # NEW кастомная колонка. !! ИСКЛЮЧИТЕЛЬНО ВРЕМЕННАЯ НЕ ЗАБЫТЬ УДАЛИТЬ ПЕРЕД create \ update !!
+            'discount_percentage',
             'category',
         ]
 
@@ -178,7 +169,6 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ['deleted_at']
 
 
-# class AuthorSerializer(serializers.ModelSerializer):
 class AuthorListSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -188,13 +178,6 @@ class AuthorListSerializer(serializers.ModelSerializer):
             'surname',
             'rating'
         ]
-
-        # extra_kwargs = {
-        #     'date_for_birth': {
-        #         'required': False,
-        #         'read_only': True
-        #     }
-        # }
 
 
 class AuthorCreateSerializer(serializers.ModelSerializer):
@@ -207,7 +190,6 @@ class AuthorCreateSerializer(serializers.ModelSerializer):
             'date_for_birth',
             'rating',
         ]
-
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -224,8 +206,6 @@ class UserListSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
 
-        # print(self.context)
-
         if self.context.get('include_related'):
             data['reviews'] = [
                 {
@@ -237,6 +217,44 @@ class UserListSerializer(serializers.ModelSerializer):
             ]
 
         return data
+
+
+
+# СЕРИАЛИЗАТОРЫ ДЛЯ ДОМАШНЕГО ЗАДАНИЯ 20 (АУТЕНТИФИКАЦИЯ)
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[validate_password]  # Валидация минимальных требований к сложности пароля Django
+    )
+    email = serializers.EmailField(required=True)
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password', 'first_name', 'last_name']
+
+    def validate_email(self, value):
+        # Обязательная проверка уникальности email в системе
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Пользователь с таким email уже существует.")
+        return value
+
+    def create(self, validated_data):
+        # Хэширование и сохранение пароля в БД через create_user
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+            first_name=validated_data.get('first_name', ''),
+            last_name=validated_data.get('last_name', '')
+        )
+        return user
+
+
+
+# ИЗНАЧАЛЬНЫЕ СЕРИАЛИЗАТОРЫ ИЗДАТЕЛЕЙ
 
 
 class PublisherListSerializer(serializers.ModelSerializer):
